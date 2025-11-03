@@ -1,39 +1,40 @@
 
-import os
-import tkinter as tk
-from tkinter import filedialog, messagebox, ttk
-from datetime import datetime
+#librerias necesarias para el funcionamiento de la aplicacion
+import os # os maneja las rutas de los archivos
+import tkinter as tk # tkinter es la libreria para crear la interfaz grafica
+from tkinter import filedialog, messagebox, ttk # filedialog es para abrir el explorador de archivos, messagebox es para mostrar mensajes de error, ttk es para crear la tabla de escenarios
+from datetime import datetime 
 import requests
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfMerger
 
-
+#se debe generar la clase Escenario --agregar un nuevo escensario obj a la lista de escenarios
 class Escenario:
     def __init__(self, ID, title, description, test_result, images):
-        self.ID = ID
-        self.title = title
-        self.description = description
-        self.test_result = test_result
-        self.images = images
+        self.ID = ID # id del escenario
+        self.title = title # titulo del escenario
+        self.description = description #descripcion del escenario
+        self.test_result = test_result # resultado del escenario
+        self.images = images # evidencia del escenario
 
-
+# clase principal de la aplicacion
 class App(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Generador de Reportes QA")
-        self.geometry("800x600")
-        self.resizable(False, False)
+    def __init__(self): # Constructor de la clase
+        super().__init__() # llamada al constructor de la clase padre
+        self.title("Generador de Reportes QA") # titulo de la ventana
+        self.geometry("800x600") # establece el tamaño de la ventana
+        self.resizable(False, False) # deshabilita redimensionar la ventana automaticamente
 
-        self.escenarios = []
-        self._crear_interfaz()
+        self.escenarios = [] # lista de escenarios
+        self._crear_interfaz() # metodo para crear la interfaz de la aplicacion
 
-    def _crear_interfaz(self):
-        tk.Label(self, text="🧪 Generador Automático de Reportes QA", font=("Helvetica", 16, "bold")).pack(pady=10)
+    def _crear_interfaz(self): # metodo para crear la interfaz de la aplicacion
+        tk.Label(self, text="🧪 Generador Automático de Reportes QA", font=("Helvetica", 16, "bold")).pack(pady=10) # etiqueta para el titulo
 
         frame_info = tk.LabelFrame(self, text="Información del Reporte", padx=10, pady=10)
-        frame_info.pack(fill="x", padx=20, pady=10)
+        frame_info.pack(fill="x", padx=20, pady=10) # frame para la informacion del reporte
 
         # Entradas principales
         self.entry_tester = self._crear_campo(frame_info, "Tester:", 0)
@@ -198,7 +199,7 @@ class App(tk.Tk):
         os.remove(reporte_pdf)
         os.rename(salida, reporte_pdf)
 
-
+# metodo principal de la aplicacion
 if __name__ == "__main__":
     app = App()
     app.mainloop()

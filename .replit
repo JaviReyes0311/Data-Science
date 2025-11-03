@@ -27,3 +27,11 @@ args = "python GetData.py"
 
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[ports]]
+localPort = 808
+externalPort = 8080
+
+[[ports]]
+localPort = 8501
+externalPort = 80

@@ -31,7 +31,7 @@ class App(tk.Tk):
         self._crear_interfaz() # metodo para crear la interfaz de la aplicacion
 
     def _crear_interfaz(self): # metodo para crear la interfaz de la aplicacion
-        tk.Label(self, text="🧪 Generador Automático de Reportes QA", font=("Helvetica", 16, "bold")).pack(pady=10) # etiqueta para el titulo
+        tk.Label(self, text="Generador Automático de Reportes QA", font=("Helvetica", 16, "bold")).pack(pady=10) # etiqueta para el titulo
 
         frame_info = tk.LabelFrame(self, text="Información del Reporte", padx=10, pady=10)
         frame_info.pack(fill="x", padx=20, pady=10) # frame para la informacion del reporte
@@ -79,7 +79,7 @@ class App(tk.Tk):
         self.tree.grid(row=4, column=0, columnspan=6, pady=10)
 
         # Botón de generar reporte
-        tk.Button(self, text="📄 Generar PDF", bg="#2196F3", fg="white", font=("Helvetica", 12, "bold"), command=self._generar_pdf).pack(pady=10)
+        tk.Button(self, text="Generar PDF", bg="#2196F3", fg="white", font=("Helvetica", 12, "bold"), command=self._generar_pdf).pack(pady=10)
 
     def _crear_campo(self, parent, label, row):
         tk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=3)
@@ -174,7 +174,7 @@ class App(tk.Tk):
                         c.showPage()
                         y = height - 100
                 except Exception:
-                    c.drawString(60, y, f"⚠️ Error al cargar imagen: {os.path.basename(img)}")
+                    c.drawString(60, y, f"Error al cargar imagen: {os.path.basename(img)}")
                     y -= 20
 
             y -= 20
@@ -184,14 +184,14 @@ class App(tk.Tk):
 
         c.save()
         self._agregar_portada(nombre_pdf)
-        messagebox.showinfo("Reporte generado", f"✅ Reporte generado: {nombre_pdf}")
+        messagebox.showinfo("Reporte generado", f"Reporte generado: {nombre_pdf}")
 
     def _agregar_portada(self, reporte_pdf):
         merger = PdfMerger()
         if os.path.exists("portada.pdf"):
             merger.append("portada.pdf")
         else:
-            print("⚠️ No se encontró 'portada.pdf'. Se generará solo el reporte.")
+            print("No se encontró 'portada.pdf'. Se generará solo el reporte.")
         merger.append(reporte_pdf)
         salida = f"reporte_final_{reporte_pdf}"
         merger.write(salida)

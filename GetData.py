@@ -86,7 +86,8 @@ if st.button("Eliminar Escenarios"):
     else:
         st.session_state.escenarios.clear()
         st.success("Escenarios eliminados correctamente!")
-
+        st.rerun()
+        
 # Función para generar el PDF
 def generar_pdf():
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -168,3 +169,5 @@ if st.button("Generar PDF del Reporte"):
         generar_pdf()
 
 #streamlit run app.py -- para ejecutar la app
+
+#versiones de prueba

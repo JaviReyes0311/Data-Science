@@ -171,3 +171,4 @@ if st.button("Generar PDF del Reporte"):
 #streamlit run app.py -- para ejecutar la app
 
 #versiones de prueba
+#pase a QA

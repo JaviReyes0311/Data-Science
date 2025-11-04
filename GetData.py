@@ -4,6 +4,7 @@ import os
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
+from PyPDF2 import PdfMerger
 
 # Clase Escenario
 class Escenario:
@@ -86,12 +87,11 @@ if st.button("Eliminar Escenarios"):
     else:
         st.session_state.escenarios.clear()
         st.success("Escenarios eliminados correctamente!")
-        st.rerun()
-        
-# Función para generar el PDF
-def generar_pdf():
+        st.rerun()  # 🔄 Recargar la aplicación
+
+# Función para generar el PDF del contenido
+def generar_pdf_contenido(nombre_pdf):
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-    nombre_pdf = f"{documento.replace(' ', '_')}.pdf"
     c = canvas.Canvas(nombre_pdf, pagesize=A4)
     width, height = A4
 
@@ -104,20 +104,19 @@ def generar_pdf():
     c.drawString(50, height - 100, f"Fecha: {fecha}")
     c.drawString(50, height - 115, f"Documento: {documento}")
 
-    y = height - 150  # posición inicial del contenido
+    y = height - 150
 
     for e in st.session_state.escenarios:
-        # Verificar si hay espacio antes de escribir un escenario nuevo
         if y < 200:
             c.showPage()
             y = height - 100
 
-        # Título del escenario
+        # Título
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"ID: {e.ID} - {e.title}")
         y -= 20
 
-        # Descripción con salto automático
+        # Descripción con saltos de línea
         c.setFont("Helvetica", 10)
         descripcion = e.description
         max_chars = 90
@@ -129,46 +128,63 @@ def generar_pdf():
         c.drawString(60, y, f"Resultado: {e.test_result}")
         y -= 30
 
-        # Imágenes de evidencia
+        # Imágenes
         for img in e.images:
             try:
                 image = ImageReader(img)
                 img_width, img_height = 450, 250
-
-                # Si no cabe la imagen, nueva página
                 if y - img_height < 100:
                     c.showPage()
                     y = height - 100
-
                 c.drawImage(image, 60, y - img_height, width=img_width, height=img_height)
-                y -= img_height + 30  # espacio después de la imagen
-
+                y -= img_height + 30
             except Exception:
                 c.drawString(60, y, f"Error al cargar imagen: {os.path.basename(img)}")
                 y -= 20
 
-        # Separación entre escenarios
         y -= 30
         if y < 150:
             c.showPage()
             y = height - 100
 
-    # Guardar PDF
     c.save()
-    st.success(f"PDF generado: {nombre_pdf}")
-    with open(nombre_pdf, "rb") as f:
-        st.download_button("📄 Descargar PDF", data=f.read(), file_name=nombre_pdf)
 
-# Botón para generar el PDF del reporte
+# Función para unir portada + reporte
+def unir_portada_con_reporte(nombre_pdf):
+    merger = PdfMerger()
+
+    portada_path = "portada.pdf"  # 🔹 debe estar en la misma carpeta que app.py
+    if os.path.exists(portada_path):
+        merger.append(portada_path)
+    else:
+        st.warning("No se encontró el archivo 'portada.pdf' en el mismo directorio. El reporte se generará sin portada.")
+
+    merger.append(nombre_pdf)
+
+    final_name = f"Reporte_QA_{documento.replace(' ', '_')}.pdf"
+    merger.write(final_name)
+    merger.close()
+
+    return final_name
+
+# Botón para generar el PDF del reporte completo
 if st.button("Generar PDF del Reporte"):
     if not (tester and proyecto and documento and empresa):
         st.warning("Por favor completa los datos del reporte.")
     elif not st.session_state.escenarios:
         st.warning("Debes agregar al menos un escenario.")
     else:
-        generar_pdf()
+        # Crear PDF de contenido
+        nombre_pdf = f"{documento.replace(' ', '_')}_contenido.pdf"
+        generar_pdf_contenido(nombre_pdf)
 
-#streamlit run app.py -- para ejecutar la app
+        # Combinar con portada
+        final_pdf = unir_portada_con_reporte(nombre_pdf)
 
-#versiones de prueba
-#pase a QA
+        st.success(f"✅ PDF generado: {final_pdf}")
+        with open(final_pdf, "rb") as f:
+            st.download_button("📄 Descargar PDF Final", data=f.read(), file_name=final_pdf)
+
+#streamlit run GetData.py -- para ejecutar la app
+
+#version 1.1.1 templeate added portada.pdf

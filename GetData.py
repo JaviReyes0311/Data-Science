@@ -1,10 +1,21 @@
+import os
+import importlib.util
+import sys
+import subprocess
+
+# 🔹 Verificar si matplotlib está instalado, si no, instalarlo antes de importarlo
+if importlib.util.find_spec("matplotlib") is None:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib"])
+
+# Ahora sí se pueden hacer los imports normalmente
 import streamlit as st
 from datetime import datetime
-import os
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfMerger
+import matplotlib.pyplot as plt
+import numpy as np
 
 # Clase Escenario
 class Escenario:
@@ -15,7 +26,7 @@ class Escenario:
         self.test_result = test_result
         self.images = images
 
-# Inicializar lista de escenarios en la sesión
+# Inicializar lista de escenarios
 if "escenarios" not in st.session_state:
     st.session_state.escenarios = []
 
@@ -36,21 +47,11 @@ with col1:
 with col2:
     test_result = st.selectbox("Resultado", ["Tested", "Test Failed", "On Hold", "Rejected"], key="resultado")
 
-description = st.text_area(
-    "Descripción", 
-    key="desc",
-    height=250, 
-    max_chars=450,
-    placeholder="Coloca aquí la descripción del escenario"
-)
+description = st.text_area("Descripción", key="desc", height=250, max_chars=450, placeholder="Coloca aquí la descripción del escenario")
 
-images = st.file_uploader(
-    "Subir imágenes de evidencia",
-    accept_multiple_files=True,
-    type=["png", "jpg", "jpeg"]
-)
+images = st.file_uploader("Subir imágenes de evidencia", accept_multiple_files=True, type=["png", "jpg", "jpeg"])
 
-# Mostrar las imágenes cargadas
+# Mostrar imágenes
 if images:
     for x in images:
         if x.type not in ["image/png", "image/jpeg", "image/jpg"]:
@@ -74,23 +75,40 @@ if st.button("Agregar Escenario"):
         st.session_state.escenarios.append(escenario)
         st.success(f"Escenario '{title}' agregado correctamente!")
 
-# Mostrar los escenarios agregados
+# Mostrar escenarios
 if st.session_state.escenarios:
     st.subheader("Escenarios Agregados")
     for e in st.session_state.escenarios:
         st.write(f"**ID:** {e.ID} | **Título:** {e.title} | **Resultado:** {e.test_result}")
 
-# Botón para eliminar todos los escenarios
+# Eliminar escenarios
 if st.button("Eliminar Escenarios"):
     if not st.session_state.escenarios:
         st.warning("No hay escenarios para eliminar.")
     else:
         st.session_state.escenarios.clear()
         st.success("Escenarios eliminados correctamente!")
-        st.rerun()  # 🔄 Recargar la aplicación
+        st.rerun()
 
-# Función para generar el PDF del contenido
-def generar_pdf_contenido(nombre_pdf):
+# --- 📊 Generar y mostrar gráfica ---
+def generarGrafica():
+    resultados = [e.test_result for e in st.session_state.escenarios]
+    if not resultados:
+        st.warning("No hay datos para generar la gráfica.")
+        return None
+
+    valores, conteos = np.unique(resultados, return_counts=True)
+
+    fig, ax = plt.subplots()
+    ax.pie(conteos, labels=valores, autopct='%1.1f%%', startangle=90)
+    ax.set_title("Distribución de Resultados de Escenarios")
+
+    plt.savefig("grafica.png")
+    st.pyplot(fig)
+    return "grafica.png"
+
+# --- 🧾 Generar PDF del contenido ---
+def generar_pdf_contenido(nombre_pdf, grafica_path=None):
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     c = canvas.Canvas(nombre_pdf, pagesize=A4)
     width, height = A4
@@ -111,12 +129,10 @@ def generar_pdf_contenido(nombre_pdf):
             c.showPage()
             y = height - 100
 
-        # Título
         c.setFont("Helvetica-Bold", 12)
         c.drawString(50, y, f"ID: {e.ID} - {e.title}")
         y -= 20
 
-        # Descripción con saltos de línea
         c.setFont("Helvetica", 10)
         descripcion = e.description
         max_chars = 90
@@ -124,11 +140,9 @@ def generar_pdf_contenido(nombre_pdf):
             c.drawString(60, y, descripcion[i:i+max_chars])
             y -= 15
 
-        # Resultado
         c.drawString(60, y, f"Resultado: {e.test_result}")
         y -= 30
 
-        # Imágenes
         for img in e.images:
             try:
                 image = ImageReader(img)
@@ -147,44 +161,43 @@ def generar_pdf_contenido(nombre_pdf):
             c.showPage()
             y = height - 100
 
+    # Añadir gráfica si existe
+    if grafica_path and os.path.exists(grafica_path):
+        c.showPage()
+        c.drawImage(grafica_path, 60, height - 450, width=450, height=350)
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(180, height - 470, "Gráfica de Resultados QA")
+
     c.save()
 
-# Función para unir portada + reporte
+# --- 📚 Unir portada + reporte ---
 def unir_portada_con_reporte(nombre_pdf):
     merger = PdfMerger()
+    portada_path = "portada.pdf"
 
-    portada_path = "portada.pdf"  # 🔹 debe estar en la misma carpeta que app.py
     if os.path.exists(portada_path):
         merger.append(portada_path)
     else:
-        st.warning("No se encontró el archivo 'portada.pdf' en el mismo directorio. El reporte se generará sin portada.")
+        st.warning("⚠️ No se encontró el archivo 'portada.pdf' en el mismo directorio.")
 
     merger.append(nombre_pdf)
-
     final_name = f"Reporte_QA_{documento.replace(' ', '_')}.pdf"
     merger.write(final_name)
     merger.close()
-
     return final_name
 
-# Botón para generar el PDF del reporte completo
+# --- 🎯 Botón para generar reporte ---
 if st.button("Generar PDF del Reporte"):
     if not (tester and proyecto and documento and empresa):
         st.warning("Por favor completa los datos del reporte.")
     elif not st.session_state.escenarios:
         st.warning("Debes agregar al menos un escenario.")
     else:
-        # Crear PDF de contenido
+        grafica_path = generarGrafica()
         nombre_pdf = f"{documento.replace(' ', '_')}_contenido.pdf"
-        generar_pdf_contenido(nombre_pdf)
-
-        # Combinar con portada
+        generar_pdf_contenido(nombre_pdf, grafica_path)
         final_pdf = unir_portada_con_reporte(nombre_pdf)
 
         st.success(f"✅ PDF generado: {final_pdf}")
         with open(final_pdf, "rb") as f:
             st.download_button("📄 Descargar PDF Final", data=f.read(), file_name=final_pdf)
-
-#streamlit run GetData.py -- para ejecutar la app
-
-#version 1.1.1 templeate added portada.pdf
